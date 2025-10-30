@@ -45,7 +45,9 @@ function mountNetwork() {
   })
 
   network.on('deselectNode', () => {
-    toggleGraphDrawer(false)
+    // Don't close drawer in pathfinding mode
+    if (!graphPathfindingMode.value)
+      toggleGraphDrawer(false)
   })
 
   watch(() => graphFilterNodeId.value, (id) => {
@@ -53,6 +55,13 @@ function mountNetwork() {
       network.moveTo({ position: { x: 0, y: 0 } })
   })
 }
+
+// Watch pathfinding results and open drawer when paths are found
+watch(graphPathfindingResults, (results) => {
+  if (graphPathfindingMode.value && results.length > 0) {
+    toggleGraphDrawer(true)
+  }
+})
 
 onMounted(() => {
   mountNetwork()

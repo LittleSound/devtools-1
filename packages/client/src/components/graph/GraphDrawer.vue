@@ -65,10 +65,19 @@ const pathfindingEnd = graphPathfindingEnd
             <span text-primary-500>{{ pathfindingResults.length }}</span>
             {{ pathfindingResults.length === 1 ? 'path' : 'paths' }} found
           </div>
+          <div text-xs text-gray-400>
+            From: {{ pathfindingStart }}
+          </div>
+          <div text-xs text-gray-400>
+            To: {{ pathfindingEnd }}
+          </div>
         </div>
         
         <div v-if="pathfindingResults.length === 0" p3 text-sm text-gray-500>
-          No paths found between these modules.
+          <div mb2>No paths found between these modules.</div>
+          <div text-xs>
+            Tip: Try using partial file names like "App.vue" or "main.ts"
+          </div>
         </div>
         
         <div

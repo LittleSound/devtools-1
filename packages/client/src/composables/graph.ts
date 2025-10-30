@@ -209,11 +209,23 @@ function updateGraph() {
 
   // Pathfinding mode: find and display paths between two nodes
   if (graphPathfindingMode.value && graphPathfindingStart.value && graphPathfindingEnd.value) {
-    const paths = findAllPaths(graphPathfindingStart.value, graphPathfindingEnd.value)
-    graphPathfindingResults.value = paths
+    // Search for modules matching the input text
+    const startModules = searchModulesByText(graphPathfindingStart.value)
+    const endModules = searchModulesByText(graphPathfindingEnd.value)
     
-    if (paths.length > 0) {
-      const { nodes, edges } = getPathNodesAndEdges(paths)
+    // Find paths between all matching start and end modules
+    const allPaths: PathInfo[] = []
+    for (const startId of startModules) {
+      for (const endId of endModules) {
+        const paths = findAllPaths(startId, endId)
+        allPaths.push(...paths)
+      }
+    }
+    
+    graphPathfindingResults.value = allPaths
+    
+    if (allPaths.length > 0) {
+      const { nodes, edges } = getPathNodesAndEdges(allPaths)
       graphNodes.add(uniqueNodes(nodes))
       graphEdges.add(uniqueEdges(edges))
     }
@@ -528,6 +540,27 @@ function recursivelyGetGraphNodeData(nodeId: string, depth = 0): GraphNodesTotal
 // #endregion
 
 // #region pathfinding functions
+/**
+ * Search for module IDs that match the given search text
+ * Returns array of full module IDs that contain the search text
+ */
+function searchModulesByText(searchText: string): string[] {
+  const results: string[] = []
+  
+  modulesMap.forEach((nodeData, moduleId) => {
+    // Search in both full path and display name
+    const displayName = nodeData.info.displayName.toLowerCase()
+    const fullPath = moduleId.toLowerCase()
+    const search = searchText.toLowerCase()
+    
+    if (displayName.includes(search) || fullPath.includes(search)) {
+      results.push(moduleId)
+    }
+  })
+  
+  return results
+}
+
 /**
  * Find all paths from start node to end node using DFS
  * Returns array of paths, where each path is an array of module IDs

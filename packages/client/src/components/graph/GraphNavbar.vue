@@ -62,6 +62,21 @@ function swapStartAndEnd() {
       <VueCheckbox v-model="settings[item[0]]" />
       <span :class="{ 'text-gray-400 dark:text-gray-600': !settings[item[0]] }">Show {{ item[1] ?? item[0] }}</span>
     </div>
+
+    <!-- Import type legend -->
+    <div flex="~ gap-4 items-center" border="l gray-200 dark:gray-700" pl-4 op-80>
+      <div flex="~ gap-1.5 items-center" text-xs>
+        <div h-0.5 w-4 bg-gray-400 />
+        <span>Static</span>
+      </div>
+      <div flex="~ gap-1.5 items-center" text-xs>
+        <svg width="16" height="2" viewBox="0 0 16 2">
+          <line x1="0" y1="1" x2="16" y2="1" stroke="#a78bfa" stroke-width="2" stroke-dasharray="3,3" />
+        </svg>
+        <span style="color: #a78bfa">Dynamic</span>
+      </div>
+    </div>
+
     <div flex-auto />
     <div>
       nodes: {{ nodesCount }} | edges: {{ edgesCount }}

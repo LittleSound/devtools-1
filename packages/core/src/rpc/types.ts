@@ -40,5 +40,6 @@ export interface ModuleInfo {
   id: string
   plugins: { name: string, transform?: number, resolveId?: number }[]
   deps: string[]
+  dynamicDeps?: string[] // Dynamic imports (import() calls)
   virtual: boolean
 }

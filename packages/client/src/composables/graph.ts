@@ -343,7 +343,7 @@ function recursivelyGetNodeByDep(node: SearcherNode[]) {
 // #endregion
 
 // #region parse graph raw data
-function getEdge(modId: string, dep: string) {
+function getEdge(modId: string, dep: string, isDynamic = false) {
   return {
     from: modId,
     to: dep,
@@ -358,6 +358,18 @@ function getEdge(modId: string, dep: string) {
         scaleFactor: 0.8,
       },
     },
+    // Use dashed line and different color for dynamic imports
+    ...(isDynamic
+      ? {
+          dashes: [5, 5],
+          color: {
+            color: '#a78bfa', // purple color for dynamic imports
+            highlight: '#c4b5fd',
+            hover: '#c4b5fd',
+          },
+          width: 2,
+        }
+      : {}),
   }
 }
 
@@ -414,16 +426,31 @@ export function parseGraphRawData(modules: ModuleInfo[], root: string) {
     // skip duplicate module, merge their deps
     if (totalNode.some(node => node.id === mod.id)) {
       const nodeData = modulesMap.get(mod.id)!
-      nodeData.node.size = determineNodeSize(nodeData.edges.length + mod.deps.length)
+      nodeData.node.size = determineNodeSize(nodeData.edges.length + mod.deps.length + (mod.dynamicDeps?.length || 0))
       const edges: Edge[] = []
       const uniqueDeps = getUniqueDeps(mod.deps, (dep) => {
-        edges.push(getEdge(mod.id, dep))
+        edges.push(getEdge(mod.id, dep, false))
       })
       const incrementalDeps = uniqueDeps.filter(dep => !nodeData.mod.deps.includes(dep))
-      if (!incrementalDeps.length)
-        return
-      nodeData.mod.deps.push(...incrementalDeps)
-      totalEdges.push(...edges)
+      if (incrementalDeps.length) {
+        nodeData.mod.deps.push(...incrementalDeps)
+        totalEdges.push(...edges)
+      }
+
+      // Handle dynamic deps
+      if (mod.dynamicDeps) {
+        const dynamicEdges: Edge[] = []
+        const uniqueDynamicDeps = getUniqueDeps(mod.dynamicDeps, (dep) => {
+          dynamicEdges.push(getEdge(mod.id, dep, true))
+        })
+        const incrementalDynamicDeps = uniqueDynamicDeps.filter(dep => !(nodeData.mod.dynamicDeps?.includes(dep)))
+        if (incrementalDynamicDeps.length) {
+          if (!nodeData.mod.dynamicDeps)
+            nodeData.mod.dynamicDeps = []
+          nodeData.mod.dynamicDeps.push(...incrementalDynamicDeps)
+          totalEdges.push(...dynamicEdges)
+        }
+      }
       return
     }
     const path = mod.id
@@ -451,7 +478,7 @@ export function parseGraphRawData(modules: ModuleInfo[], root: string) {
     }
 
     const uniqueDeps = getUniqueDeps(mod.deps, (dep) => {
-      node.edges.push(getEdge(mod.id, dep))
+      node.edges.push(getEdge(mod.id, dep, false)) // false = static import
       // save references
       if (!moduleReferences.has(dep))
         moduleReferences.set(dep, [])
@@ -468,6 +495,28 @@ export function parseGraphRawData(modules: ModuleInfo[], root: string) {
       })
     })
     mod.deps = uniqueDeps
+
+    // Process dynamic imports
+    if (mod.dynamicDeps) {
+      const uniqueDynamicDeps = getUniqueDeps(mod.dynamicDeps, (dep) => {
+        node.edges.push(getEdge(mod.id, dep, true)) // true = dynamic import
+        // save references
+        if (!moduleReferences.has(dep))
+          moduleReferences.set(dep, [])
+        const moduleReferencesValue = moduleReferences.get(dep)!
+        const displayPath = removeRootPath(path)
+        const isExist = !!(moduleReferencesValue.find(item => item.path === path && item.displayPath === displayPath && item.mod.id === mod.id))
+        if (isExist)
+          return
+
+        moduleReferencesValue.push({
+          path,
+          displayPath,
+          mod,
+        })
+      })
+      mod.dynamicDeps = uniqueDynamicDeps
+    }
     graphNodesTotal.value.push(node)
     graphNodesTotalMap.set(mod.id, node)
 
